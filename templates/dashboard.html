@@ -1,0 +1,1404 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Network Dashboard{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title mb-2">Network Dashboard</h1>
+            <p class="page-subtitle mb-0">Monitor your network infrastructure in real-time</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" onclick="refreshDashboard()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="exportDashboard()">
+                <i class="bi bi-download me-1"></i>Export
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Enhanced Stats Cards ─────────────────────────────────────────────── -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="card stat-card-modern border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-2 small fw-semibold text-uppercase">Total Devices</p>
+                        <h3 class="mb-0 fw-bold" id="total-devices">{{ stats.total_equipements }}</h3>
+                        <div class="mt-2">
+                            <span class="badge bg-light text-dark">
+                                <i class="bi bi-hdd-network me-1"></i>Network Assets
+                            </span>
+                        </div>
+                    </div>
+                    <div class="stat-icon-modern bg-primary bg-opacity-10">
+                        <i class="bi bi-hdd-network text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="card stat-card-modern border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-2 small fw-semibold text-uppercase">Devices Online</p>
+                        <h3 class="mb-0 fw-bold text-success" id="devices-up">{{ stats.devices_up }}</h3>
+                        <div class="mt-2">
+                            <span class="badge bg-success bg-opacity-10 text-success">
+                                <i class="bi bi-check-circle me-1"></i>Operational
+                            </span>
+                        </div>
+                    </div>
+                    <div class="stat-icon-modern bg-success bg-opacity-10">
+                        <i class="bi bi-check-circle text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="card stat-card-modern border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-2 small fw-semibold text-uppercase">Devices Offline</p>
+                        <h3 class="mb-0 fw-bold text-danger" id="devices-down">{{ stats.devices_down }}</h3>
+                        <div class="mt-2">
+                            <span class="badge bg-danger bg-opacity-10 text-danger">
+                                <i class="bi bi-x-circle me-1"></i>Critical
+                            </span>
+                        </div>
+                    </div>
+                    <div class="stat-icon-modern bg-danger bg-opacity-10">
+                        <i class="bi bi-x-circle text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="card stat-card-modern border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-2 small fw-semibold text-uppercase">Active Alerts</p>
+                        <h3 class="mb-0 fw-bold text-warning" id="unread-alerts">{{ stats.alertes_non_lues }}</h3>
+                        <div class="mt-2">
+                            <span class="badge bg-warning bg-opacity-10 text-warning">
+                                <i class="bi bi-bell me-1"></i>Attention Required
+                            </span>
+                        </div>
+                    </div>
+                    <div class="stat-icon-modern bg-warning bg-opacity-10">
+                        <i class="bi bi-bell text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Enhanced Charts Section ───────────────────────────────────────────── -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 pb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 fw-semibold">
+                        <i class="bi bi-pie-chart me-2 text-primary"></i>
+                        Device Status Distribution
+                    </h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="exportChart('status')">Export Data</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="refreshChart('status')">Refresh</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body pb-4">
+                <div style="position:relative; height:280px;">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 pb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 fw-semibold">
+                        <i class="bi bi-diagram-3 me-2 text-info"></i>
+                        Device Types
+                    </h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="exportChart('type')">Export Data</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="refreshChart('type')">Refresh</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body pb-4">
+                <div style="position:relative; height:280px;">
+                    <canvas id="typeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Enhanced Real-time Monitoring ─────────────────────────────────────── -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5 class="card-title mb-0 fw-semibold">
+                            <i class="bi bi-activity text-success me-2"></i>
+                            Real-time Network Status
+                        </h5>
+                        <p class="text-muted small mb-0 mt-1">Live monitoring of all network devices</p>
+                    </div>
+                    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                        <div class="d-flex align-items-center justify-content-md-end gap-3">
+                            <div class="d-flex align-items-center">
+                                <div class="status-dot me-2" id="realtime-status-dot"></div>
+                                <span class="badge bg-success" id="realtime-status">
+                                    <i class="bi bi-circle-fill me-1"></i>Live
+                                </span>
+                            </div>
+                            <small class="text-muted" id="last-update">Last update: --</small>
+                            <button class="btn btn-sm btn-outline-primary" onclick="toggleRealtime()" id="realtime-toggle">
+                                <i class="bi bi-pause me-1"></i>Pause
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3" id="realtime-devices">
+                    {% for eq in equipements %}
+                    <div class="col-xl-3 col-lg-4 col-md-6">
+                        <div class="device-status-card-modern" data-device-id="{{ eq.id }}">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <h6 class="card-title mb-1 fw-semibold">{{ eq.nom }}</h6>
+                                            <p class="text-muted small mb-0">{{ eq.ip }}</p>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="status-indicator-modern {% if eq.status == 'UP' %}status-up{% elif eq.status == 'Active (No exposed services)' %}status-active{% elif eq.status == 'OUTSIDE' %}status-outside{% else %}status-down{% endif %}" 
+                                                 id="realtime-status-{{ eq.id }}">
+                                                <i class="bi bi-circle-fill"></i>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-danger delete-card-btn"
+                                            data-device-id="{{ eq.id }}"
+                                            data-device-name="{{ eq.nom }}"
+                                            data-device-ip="{{ eq.ip }}"
+                                            title="Delete {{ eq.nom }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge {% if eq.status == 'UP' %}bg-success{% elif eq.status == 'Active (No exposed services)' %}bg-info{% elif eq.status == 'OUTSIDE' %}bg-warning{% else %}bg-danger{% endif %} bg-opacity-10">
+                                            {% if eq.status == 'Active (No exposed services)' %}
+                                                <i class="bi bi-shield-check me-1"></i>Active
+                                            {% elif eq.status == 'OUTSIDE' %}
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Outside Network
+                                            {% elif eq.status == 'UP' %}
+                                                <i class="bi bi-check-circle me-1"></i>Online
+                                            {% else %}
+                                                <i class="bi bi-x-circle me-1"></i>Offline
+                                            {% endif %}
+                                        </span>
+                                        <span class="text-muted small">
+                                            {% if eq.type %}{{ eq.type }}{% else %}Unknown{% endif %}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="device-ports-modern" id="realtime-ports-{{ eq.id }}">
+                                        {% if eq.open_ports %}
+                                            {% set ports = eq.open_ports | from_json %}
+                                            {% if ports %}
+                                                {% set open_count = ports | selectattr('status', 'equalto', 'OPEN') | list | length %}
+                                                {% set closed_count = ports | selectattr('status', 'equalto', 'CLOSED') | list | length %}
+                                                <div class="d-flex gap-2">
+                                                    <span class="badge bg-success bg-opacity-10 text-success small">
+                                                        <i class="bi bi-unlock me-1"></i>{{ open_count }} Open
+                                                    </span>
+                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary small">
+                                                        <i class="bi bi-lock me-1"></i>{{ closed_count }} Closed
+                                                    </span>
+                                                </div>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-light text-dark small">
+                                                <i class="bi bi-dash-circle me-1"></i>No Data
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Enhanced Recent Devices & Alerts ─────────────────────────────────── -->
+<div class="row g-4">
+
+    <!-- Recent Devices -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0 fw-semibold">
+                            <i class="bi bi-hdd-network me-2 text-primary"></i>
+                            Recent Devices
+                        </h5>
+                        <p class="text-muted small mb-0 mt-1">Latest network devices status</p>
+                    </div>
+                    <a href="{{ url_for('equipements') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-arrow-right me-1"></i>View All
+                        </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if equipements %}
+                <div class="table-responsive">
+                    <table class="table table-modern">
+                        <thead>
+                            <tr>
+                                <th><i class="bi bi-device-hdd me-1"></i>Device</th>
+                                <th><i class="bi bi-wifi me-1"></i>IP Address</th>
+                                <th><i class="bi bi-tag me-1"></i>Type</th>
+                                <th><i class="bi bi-activity me-1"></i>Status</th>
+                                <th><i class="bi bi-bell me-1"></i>Alert</th>
+                                <th><i class="bi bi-exclamation-triangle me-1"></i>Severity</th>
+                                <th><i class="bi bi-gear me-1"></i>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for eq in equipements[:5] %}
+                            <tr class="device-row" id="device-{{ eq.id }}">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="device-avatar me-2">
+                                            <i class="bi bi-hdd-network"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">{{ eq.nom }}</div>
+                                            <small class="text-muted">ID: {{ eq.id }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <code class="bg-light px-2 py-1 rounded">{{ eq.ip }}</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info bg-opacity-10 text-info">
+                                        <i class="bi bi-tag me-1"></i>{{ eq.type or 'Unknown' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        {% if eq.status == 'UP' %}
+                                        <span class="badge bg-success bg-opacity-10 text-success" id="status-badge-{{ eq.id }}">
+                                            <i class="bi bi-circle-fill me-1"></i>Online
+                                        </span>
+                                        {% elif eq.status == 'Active (No exposed services)' %}
+                                        <span class="badge bg-info bg-opacity-10 text-info" id="status-badge-{{ eq.id }}">
+                                            <i class="bi bi-circle-fill me-1"></i>Active
+                                        </span>
+                                        {% elif eq.status == 'OUTSIDE' %}
+                                        <span class="badge bg-warning bg-opacity-10 text-warning" id="status-badge-{{ eq.id }}">
+                                            <i class="bi bi-circle-fill me-1"></i>Outside Network
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger" id="status-badge-{{ eq.id }}">
+                                            <i class="bi bi-circle-fill me-1"></i>Offline
+                                        </span>
+                                        {% endif %}
+                                        
+                                        {% if eq.open_ports %}
+                                            {% set port_data = eq.open_ports | from_json %}
+                                            {% if port_data %}
+                                                <button class="btn btn-sm btn-outline-info btn-modern" type="button" 
+                                                        data-bs-toggle="collapse" 
+                                                        data-bs-target="#ports-{{ eq.id }}"
+                                                        title="View port details">
+                                                    <i class="bi bi-shield-check me-1"></i>View Ports
+                                                </button>
+                                            {% endif %}
+                                        {% else %}
+                                            <button class="btn btn-sm btn-outline-secondary btn-modern" type="button" 
+                                                    title="No port data available - scan device first">
+                                                <i class="bi bi-shield-x me-1"></i>No Data
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="alert-cell" id="alert-{{ eq.id }}">
+                                        <small class="text-muted" id="alert-text-{{ eq.id }}">
+                                            <i class="bi bi-hourglass-split me-1"></i>Scanning...
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="severity-cell" id="severity-{{ eq.id }}">
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary" id="severity-badge-{{ eq.id }}">
+                                            <i class="bi bi-question-circle me-1"></i>Unknown
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary btn-modern scan-btn"
+                                                data-device-id="{{ eq.id }}"
+                                                data-device-ip="{{ eq.ip }}"
+                                                title="Scan {{ eq.nom }}">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger btn-modern delete-btn"
+                                        data-device-id="{{ eq.id }}"
+                                        data-device-name="{{ eq.nom }}"
+                                        data-device-ip="{{ eq.ip }}"
+                                        title="Delete {{ eq.nom }} permanently">
+                                    <i class="bi bi-trash me-1"></i>Delete
+                                </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {# Port details row #}
+                            {% if eq.open_ports %}
+                                {% set port_data = eq.open_ports | from_json %}
+                                <tr class="port-details-row">
+                                    <td colspan="7" class="p-0">
+                                        <div class="collapse" id="ports-{{ eq.id }}">
+                                            <div class="card border-0 bg-light">
+                                                <div class="card-body">
+                                                    <h6 class="card-title mb-3">
+                                                        <i class="bi bi-shield-check me-2 text-primary"></i>
+                                                        Port Scan Results - {{ eq.ip }}
+                                                    </h6>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th><i class="bi bi-door-open me-1"></i>Port</th>
+                                                                    <th><i class="bi bi-gear me-1"></i>Service</th>
+                                                                    <th><i class="bi bi-toggle-on me-1"></i>Status</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {% if port_data is mapping %}
+                                                                    {% for port_num, port_info in port_data.items() %}
+                                                                        <tr>
+                                                                            <td><code class="bg-white px-2 py-1 rounded">{{ port_num }}</code></td>
+                                                                            <td>{{ port_info.service }}</td>
+                                                                            <td>
+                                                                                {% if port_info.status == 'OPEN' %}
+                                                                                    <span class="badge bg-success">OPEN</span>
+                                                                                {% elif port_info.status == 'CLOSED' %}
+                                                                                    <span class="badge bg-danger">CLOSED</span>
+                                                                                {% else %}
+                                                                                    <span class="badge bg-secondary">ERROR</span>
+                                                                                {% endif %}
+                                                                            </td>
+                                                                        </tr>
+                                                                    {% endfor %}
+                                                                {% else %}
+                                                                    {% for port_info in port_data %}
+                                                                        <tr>
+                                                                            <td><code class="bg-white px-2 py-1 rounded">{{ port_info.port }}</code></td>
+                                                                            <td>{{ port_info.service }}</td>
+                                                                            <td>
+                                                                                {% if port_info.status == 'OPEN' %}
+                                                                                    <span class="badge bg-success">OPEN</span>
+                                                                                {% elif port_info.status == 'CLOSED' %}
+                                                                                    <span class="badge bg-danger">CLOSED</span>
+                                                                                {% else %}
+                                                                                    <span class="badge bg-secondary">ERROR</span>
+                                                                                {% endif %}
+                                                                            </td>
+                                                                        </tr>
+                                                                    {% endfor %}
+                                                                {% endif %}
+                                                                {% if port_data | length == 0 %}
+                                                                    <tr>
+                                                                        <td colspan="3" class="text-center text-muted py-3">
+                                                                            <i class="bi bi-inbox me-2"></i>No port data available
+                                                                        </td>
+                                                                    </tr>
+                                                                {% endif %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="bi bi-hdd-network"></i></div>
+                    <h5 class="empty-title">No devices found</h5>
+                    <p class="empty-description">Start by adding your first network device</p>
+                    <a href="{{ url_for('add_device') }}" class="btn btn-primary btn-modern">
+                        <i class="bi bi-plus-circle me-2"></i>Add Device
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Real-time Alerts -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0 fw-semibold">
+                            <i class="bi bi-bell me-2 text-warning"></i>
+                            Real-time Alerts
+                        </h5>
+                        <p class="text-muted small mb-0 mt-1">Intelligent security analysis</p>
+                    </div>
+                    <span class="badge bg-warning bg-opacity-10 text-warning" id="realtime-alerts-count">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        0
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="realtime-alerts-list">
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="bi bi-bell"></i></div>
+                        <h5 class="empty-title">Loading alerts...</h5>
+                        <p class="empty-description">Analyzing devices for security issues</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Enhanced Quick Actions ───────────────────────────────────────────── -->
+<div class="row g-4 mt-0">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0 fw-semibold">
+                            <i class="bi bi-lightning me-2 text-primary"></i>
+                            Quick Actions
+                        </h5>
+                        <p class="text-muted small mb-0 mt-1">Common tasks and shortcuts</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ url_for('add_device') }}" class="btn btn-primary btn-modern w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                            <i class="bi bi-plus-circle display-6 mb-2"></i>
+                            <span class="fw-semibold">Add Device</span>
+                            <small class="text-muted mt-1">Register new equipment</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ url_for('scan_all') }}" class="btn btn-outline-primary btn-modern w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                            <i class="bi bi-search display-6 mb-2"></i>
+                            <span class="fw-semibold">Scan All</span>
+                            <small class="text-muted mt-1">Network-wide scan</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ url_for('equipements') }}" class="btn btn-outline-primary btn-modern w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                            <i class="bi bi-hdd-network display-6 mb-2"></i>
+                            <span class="fw-semibold">View Devices</span>
+                            <small class="text-muted mt-1">Manage equipment</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <button class="btn btn-outline-secondary btn-modern w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3" onclick="location.reload()">
+                            <i class="bi bi-arrow-clockwise display-6 mb-2"></i>
+                            <span class="fw-semibold">Refresh</span>
+                            <small class="text-muted mt-1">Update dashboard</small>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     AI ANALYSIS SECTION  ── FIXED
+     ══════════════════════════════════════════════════════════════════════ -->
+<div class="row g-4 mt-0">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0 fw-semibold">
+                            <i class="bi bi-cpu me-2 text-primary"></i>
+                            AI Security Analysis
+                        </h5>
+                        <p class="text-muted small mb-0 mt-1">Intelligent network security assessment powered by Ollama</p>
+                    </div>
+                    <!-- ★ FIX: onclick calls the function defined BELOW in the same scope -->
+                    <button id="ai-analysis-btn"
+                            class="btn btn-primary btn-modern"
+                            onclick="generateAIAnalysis()">
+                        <i class="bi bi-magic me-2"></i>Generate AI Report
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+
+                <!-- Loading spinner -->
+                <div id="ai-analysis-loading" class="text-center py-5" style="display:none;">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Analyzing...</span>
+                    </div>
+                    <h6 class="fw-semibold">AI is analyzing your network security…</h6>
+                    <p class="text-muted small">This may take 15–60 seconds depending on model size</p>
+                </div>
+
+                <!-- Result panel -->
+                <div id="ai-analysis-result" style="display:none;">
+                    <div class="alert alert-info border-0 shadow-sm">
+                        <h6 class="fw-semibold mb-3">
+                            <i class="bi bi-shield-check me-2"></i>AI Security Assessment
+                        </h6>
+                        <div id="ai-analysis-content"></div>
+                    </div>
+                </div>
+
+                <!-- Error panel -->
+                <div id="ai-analysis-error" class="alert alert-danger border-0 shadow-sm" style="display:none;">
+                    <h6 class="fw-semibold mb-2">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Analysis Error
+                    </h6>
+                    <div id="ai-analysis-error-content"></div>
+                </div>
+
+                <!-- Empty / initial state -->
+                <div id="ai-analysis-empty" class="text-center text-muted py-5">
+                    <i class="bi bi-cpu display-1 mb-3 d-block"></i>
+                    <h6 class="fw-semibold mb-2">AI-Powered Security Analysis</h6>
+                    <p class="mb-3">Click <strong>Generate AI Report</strong> to analyse your network with Ollama AI</p>
+                    <span class="badge bg-light text-dark me-1">
+                        <i class="bi bi-cpu me-1"></i>Requires Ollama
+                    </span>
+                    <span class="badge bg-light text-dark">
+                        <i class="bi bi-check-circle me-1"></i>llama3 model
+                    </span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Safe JSON data block ──────────────────────────────────────────────── -->
+<script id="dashboard-data" type="application/json">
+{
+    "devicesUp":   {{ stats.devices_up   | default(0) | int | tojson }},
+    "devicesDown": {{ stats.devices_down | default(0) | int | tojson }},
+    "routeurs":    {{ stats.routeurs     | default(0) | int | tojson }},
+    "switches":    {{ stats.switches     | default(0) | int | tojson }},
+    "total":       {{ stats.total_equipements | default(0) | int | tojson }}
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+/* ═════════════════════════════════════════════════════════════════════════════════════════════
+   DASHBOARD JAVASCRIPT  ── FIXED
+   ═══════════════════════════════════════════════════════════════════════ */
+(function () {
+    'use strict';
+
+    // ── Parse server-side stats ──────────────────────────────────────────
+    var STATS = { devicesUp: 0, devicesDown: 0, routeurs: 0, switches: 0, total: 0 };
+    try {
+        STATS = JSON.parse(document.getElementById('dashboard-data').textContent);
+    } catch (e) {
+        console.error('Failed to parse dashboard data:', e);
+    }
+
+    var devicesUp   = STATS.devicesUp   || 0;
+    var devicesDown = STATS.devicesDown || 0;
+    var routeurs    = STATS.routeurs    || 0;
+    var switches    = STATS.switches    || 0;
+    var total       = STATS.total       || 0;
+    var others      = Math.max(0, total - routeurs - switches);
+
+    function pctLabel(context) {
+        var sum = context.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+        if (sum === 0) return context.label + ': 0';
+        return context.label + ': ' + context.parsed +
+               ' (' + ((context.parsed * 100) / sum).toFixed(1) + '%)';
+    }
+
+    // ── Charts ───────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+
+        new Chart(document.getElementById('statusChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Online', 'Offline', 'Active', 'Outside Network'],
+                datasets: [{
+                    data: [devicesUp, devicesDown, 0, 0],
+                    backgroundColor: ['#17a2b8', '#dc3545', '#28a745', '#ffc107'],
+                    borderWidth: 3, 
+                    borderColor: '#ffffff',
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { 
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            usePointStyle: true,
+                            font: { size: 12 }
+                        }
+                    }, 
+                    tooltip: { 
+                        callbacks: { 
+                            label: function(context) {
+                                var label = context.label || '';
+                                var value = context.parsed || 0;
+                                var total = context.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                                var percentage = total > 0 ? ((value * 100) / total).toFixed(1) : 0;
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    animateRotate: true,
+                    animateScale: false
+                }
+            }
+        });
+
+        new Chart(document.getElementById('typeChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Routers', 'Switches', 'Others'],
+                datasets: [{
+                    data: [routeurs, switches, others],
+                    backgroundColor: ['#0F9D58', '#ffc107', '#6c757d'],
+                    borderWidth: 3, 
+                    borderColor: '#ffffff',
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { 
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            usePointStyle: true,
+                            font: { size: 12 }
+                        }
+                    }, 
+                    tooltip: { 
+                        callbacks: { 
+                            label: function(context) {
+                                var label = context.label || '';
+                                var value = context.parsed || 0;
+                                var total = context.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                                var percentage = total > 0 ? ((value * 100) / total).toFixed(1) : 0;
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    animateRotate: true,
+                    animateScale: false
+                }
+            }
+        });
+
+        // ── Scan buttons ─────────────────────────────────────────────────
+        document.querySelectorAll('.scan-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var deviceId = btn.getAttribute('data-device-id');
+                var deviceIp = btn.getAttribute('data-device-ip');
+                var icon     = btn.querySelector('i');
+
+                btn.disabled = true;
+                if (icon) icon.className = 'bi bi-arrow-repeat spin';
+
+                fetch('/scan-device', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ ip: deviceIp })
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var statusBadge = document.getElementById('status-badge-' + deviceId);
+                    var portsDiv    = document.getElementById('realtime-ports-' + deviceId);
+                    var alertText   = document.getElementById('alert-text-' + deviceId);
+                    var severityBadge = document.getElementById('severity-badge-' + deviceId);
+
+                    if (statusBadge) {
+                        if (data.status === 'UP') {
+                            statusBadge.className = 'badge bg-success bg-opacity-10 text-success';
+                            statusBadge.innerHTML = '<i class="bi bi-circle-fill me-1"></i>Online';
+                        } else if (data.status === 'ACTIVE') {
+                            statusBadge.className = 'badge bg-info bg-opacity-10 text-info';
+                            statusBadge.innerHTML = '<i class="bi bi-circle-fill me-1"></i>Active';
+                        } else if (data.status === 'OUTSIDE') {
+                            statusBadge.className = 'badge bg-warning bg-opacity-10 text-warning';
+                            statusBadge.innerHTML = '<i class="bi bi-circle-fill me-1"></i>Outside Network';
+                        } else {
+                            statusBadge.className = 'badge bg-danger bg-opacity-10 text-danger';
+                            statusBadge.innerHTML = '<i class="bi bi-circle-fill me-1"></i>Offline';
+                        }
+                    }
+
+                    // Update alert and severity
+                    if (alertText && data.alert) {
+                        alertText.innerHTML = '<i class="bi bi-bell me-1"></i>' + data.alert;
+                    }
+                    
+                    if (severityBadge && data.severity) {
+                        var severityClass = 'badge bg-secondary bg-opacity-10 text-secondary';
+                        var severityIcon = 'bi-question-circle';
+                        
+                        if (data.severity === 'HIGH') {
+                            severityClass = 'badge bg-danger bg-opacity-10 text-danger';
+                            severityIcon = 'bi-exclamation-triangle-fill';
+                        } else if (data.severity === 'MEDIUM') {
+                            severityClass = 'badge bg-warning bg-opacity-10 text-warning';
+                            severityIcon = 'bi-exclamation-circle-fill';
+                        } else if (data.severity === 'LOW') {
+                            severityClass = 'badge bg-success bg-opacity-10 text-success';
+                            severityIcon = 'bi-info-circle-fill';
+                        }
+                        
+                        severityBadge.className = severityClass;
+                        severityBadge.innerHTML = '<i class="bi ' + severityIcon + ' me-1"></i>' + data.severity;
+                    }
+
+                    if (portsDiv && data.ports) {
+                        var openPorts   = data.ports.filter(function (p) { return p.state === 'open'; });
+                        var closedPorts = data.ports.filter(function (p) { return p.state === 'closed'; });
+                        portsDiv.innerHTML =
+                            '<div class="d-flex gap-2">' +
+                            (openPorts.length   ? '<span class="badge bg-success bg-opacity-10 text-success small"><i class="bi bi-unlock me-1"></i>'   + openPorts.length   + ' Open</span>'   : '') +
+                            (closedPorts.length ? '<span class="badge bg-secondary bg-opacity-10 text-secondary small"><i class="bi bi-lock me-1"></i>' + closedPorts.length + ' Closed</span>' : '') +
+                            '</div>';
+                    }
+                    console.log('[SCAN] result:', data);
+                })
+                .catch(function (err) { console.error('[SCAN] error:', err); })
+                .finally(function () {
+                    btn.disabled = false;
+                    if (icon) icon.className = 'bi bi-search';
+                });
+            });
+        });
+
+        // ── Delete buttons ────────────────────────────────────────────────
+        function handleDeleteButton(btn) {
+            var deviceId   = btn.getAttribute('data-device-id');
+            var deviceName = btn.getAttribute('data-device-name');
+            var deviceIp   = btn.getAttribute('data-device-ip');
+            
+            // Create a better confirmation dialog
+            var confirmMessage = 'Are you sure you want to delete this device?\n\n' +
+                               'Name: ' + deviceName + '\n' +
+                               'IP: ' + deviceIp + '\n\n' +
+                               'This action cannot be undone and will remove all device data including scan history.';
+            
+            if (confirm(confirmMessage)) {
+                // Show loading state
+                var originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Deleting...';
+                
+                // Redirect to delete endpoint
+                window.location.href = '/delete/' + deviceId;
+            }
+        }
+        
+        // Handle delete buttons in table
+        document.querySelectorAll('.delete-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                handleDeleteButton(btn);
+            });
+        });
+        
+        // Handle delete buttons in device cards
+        document.querySelectorAll('.delete-card-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                handleDeleteButton(btn);
+            });
+        });
+
+    }); // end DOMContentLoaded
+
+    // ── Real-time status polling ─────────────────────────────────────────
+    var realtimeInterval;
+    var isInitialLoad = true;
+
+    function updateRealtimeStatus() {
+        var loadingIndicator = isInitialLoad ? document.getElementById('realtime-alerts-list') : null;
+        
+        // Show loading state only on initial load
+        if (isInitialLoad && loadingIndicator) {
+            loadingIndicator.innerHTML = 
+                '<div class="text-center py-4">' +
+                '<div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>' +
+                '<span class="text-muted">Loading security analysis...</span>' +
+                '</div>';
+        }
+
+        fetch('/api/equipments/status', {
+            method: 'GET',
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'include'
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            var now = new Date();
+            var lu  = document.getElementById('last-update');
+            if (lu) lu.textContent = 'Last update: ' + now.toLocaleTimeString();
+
+            // Batch update DOM elements for better performance
+            var updates = [];
+            
+            data.forEach(function (device) {
+                var portsEl = document.getElementById('realtime-ports-' + device.id);
+                var alertText = document.getElementById('alert-text-' + device.id);
+                var severityBadge = document.getElementById('severity-badge-' + device.id);
+                
+                if (portsEl && device.ports) {
+                    var openCount = 0, closedCount = 0;
+                    device.ports.forEach(function (p) {
+                        if (p.status === 'OPEN')   openCount++;
+                        else if (p.status === 'CLOSED') closedCount++;
+                    });
+                    updates.push({
+                        element: portsEl,
+                        html: '<div class="d-flex gap-2">' +
+                               (openCount   ? '<span class="badge bg-success bg-opacity-10 text-success small"><i class="bi bi-unlock me-1"></i>'   + openCount   + ' Open</span>'   : '') +
+                               (closedCount ? '<span class="badge bg-secondary bg-opacity-10 text-secondary small"><i class="bi bi-lock me-1"></i>' + closedCount + ' Closed</span>' : '') +
+                               '</div>'
+                    });
+                }
+                
+                // Update alert and severity from real-time data
+                if (alertText && device.alert) {
+                    updates.push({
+                        element: alertText,
+                        html: '<i class="bi bi-bell me-1"></i>' + device.alert
+                    });
+                }
+                
+                if (severityBadge && device.severity) {
+                    var severityClass = 'badge bg-secondary bg-opacity-10 text-secondary';
+                    var severityIcon = 'bi-question-circle';
+                    
+                    if (device.severity === 'HIGH') {
+                        severityClass = 'badge bg-danger bg-opacity-10 text-danger';
+                        severityIcon = 'bi-exclamation-triangle-fill';
+                    } else if (device.severity === 'MEDIUM') {
+                        severityClass = 'badge bg-warning bg-opacity-10 text-warning';
+                        severityIcon = 'bi-exclamation-circle-fill';
+                    } else if (device.severity === 'LOW') {
+                        severityClass = 'badge bg-success bg-opacity-10 text-success';
+                        severityIcon = 'bi-info-circle-fill';
+                    }
+                    
+                    updates.push({
+                        element: severityBadge,
+                        className: severityClass,
+                        html: '<i class="bi ' + severityIcon + ' me-1"></i>' + device.severity
+                    });
+                }
+            });
+            
+            // Apply all DOM updates in batch for better performance
+            updates.forEach(function(update) {
+                if (update.html) update.element.innerHTML = update.html;
+                if (update.className) update.element.className = update.className;
+            });
+            
+            // Update real-time alerts list
+            updateRealtimeAlerts(data);
+            
+            // Update stats cards with real-time counts
+            updateStatsCards(data);
+            
+            // Clear initial load flag after first successful update
+            if (isInitialLoad) {
+                isInitialLoad = false;
+                console.log('[RT] Initial load completed');
+            }
+        })
+        .catch(function (err) {
+            console.error('[RT] update error:', err);
+            var rs = document.getElementById('realtime-status');
+            if (rs) {
+                rs.className = 'badge bg-secondary';
+                rs.innerHTML = '<i class="bi bi-circle-fill me-1"></i>Offline';
+            }
+            
+            // Show error state in alerts list
+            if (isInitialLoad) {
+                var alertsList = document.getElementById('realtime-alerts-list');
+                if (alertsList) {
+                    alertsList.innerHTML = 
+                        '<div class="empty-state">' +
+                        '<div class="empty-icon"><i class="bi bi-exclamation-triangle"></i></div>' +
+                        '<h5 class="empty-title">Connection Error</h5>' +
+                        '<p class="empty-description">Unable to load device data</p>' +
+                        '</div>';
+                }
+                isInitialLoad = false;
+            }
+        });
+    }
+
+   function startRealtimeMonitoring() {
+    updateRealtimeStatus();
+    realtimeInterval = setInterval(updateRealtimeStatus, 15000);
+}
+
+    function stopRealtimeMonitoring() {
+        if (realtimeInterval) { clearInterval(realtimeInterval); realtimeInterval = null; }
+    }
+
+    // Export to outer scope so onclick="toggleRealtime()" works
+    window.toggleRealtime = function () {
+        var btn = document.getElementById('realtime-toggle');
+        if (realtimeInterval) {
+            stopRealtimeMonitoring();
+            if (btn) btn.innerHTML = '<i class="bi bi-play me-1"></i>Resume';
+        } else {
+            startRealtimeMonitoring();
+            if (btn) btn.innerHTML = '<i class="bi bi-pause me-1"></i>Pause';
+        }
+    };
+
+    startRealtimeMonitoring();
+
+    document.addEventListener('visibilitychange', function () {
+        document.hidden ? stopRealtimeMonitoring() : startRealtimeMonitoring();
+    });
+
+    // ════════════════════════════════════════════════════════════════════
+    // ★★★  AI ANALYSIS  ── FIXED  ★★★
+    //
+    // Key fixes applied:
+    //   1. Function defined in the OUTER IIFE scope so onclick="" can find it
+    //      → exposed via window.generateAIAnalysis
+    //   2. fetch() sends Content-Type header so Flask's request.get_json() works
+    //   3. Response branch checks data.result (Flask returns {"result": "..."})
+    //   4. loadingDiv is hidden in ALL exit paths (including early-return on 302)
+    //   5. Text is escaped before injecting into innerHTML (XSS-safe)
+    // ════════════════════════════════════════════════════════════════════
+    window.generateAIAnalysis = function () {
+        console.log('[AI] generateAIAnalysis() called');
+
+        var btn        = document.getElementById('ai-analysis-btn');
+        var loadingDiv = document.getElementById('ai-analysis-loading');
+        var resultDiv  = document.getElementById('ai-analysis-result');
+        var errorDiv   = document.getElementById('ai-analysis-error');
+        var emptyDiv   = document.getElementById('ai-analysis-empty');
+
+        // Guard: elements must exist
+        if (!btn || !loadingDiv || !resultDiv || !errorDiv || !emptyDiv) {
+            console.error('[AI] One or more UI elements not found — check IDs in HTML');
+            return;
+        }
+
+        // ── Show loading, hide others ────────────────────────────────────
+        loadingDiv.style.display = 'block';
+        resultDiv.style.display  = 'none';
+        errorDiv.style.display   = 'none';
+        emptyDiv.style.display   = 'none';
+        btn.disabled             = true;
+        btn.innerHTML            = '<i class="bi bi-hourglass-split me-1"></i>Analyzing…';
+
+        // ── Helper: escape HTML so the AI text is safe to inject ─────────
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // ── Helper: show result ──────────────────────────────────────────
+        function showResult(text) {
+            loadingDiv.style.display = 'none';
+            errorDiv.style.display   = 'none';
+            emptyDiv.style.display   = 'none';
+            var content = document.getElementById('ai-analysis-content');
+            // Render newlines as <br> for readability
+            content.innerHTML =
+                '<pre style="white-space:pre-wrap;background:#f8f9fa;' +
+                'padding:1rem;border-radius:.5rem;margin:0;font-size:.85rem;">' +
+                escapeHtml(text) + '</pre>';
+            resultDiv.style.display = 'block';
+        }
+
+        // ── Helper: show error ───────────────────────────────────────────
+        function showError(msg) {
+            loadingDiv.style.display = 'none';
+            resultDiv.style.display  = 'none';
+            emptyDiv.style.display   = 'none';
+            var ec = document.getElementById('ai-analysis-error-content');
+            ec.innerHTML =
+                escapeHtml(msg) +
+                '<br><small class="text-muted mt-1 d-block">' +
+                'Make sure Ollama is running: <code>ollama serve</code>' +
+                '</small>';
+            errorDiv.style.display = 'block';
+        }
+
+        // ── Fetch ────────────────────────────────────────────────────────
+        fetch('/generate-ai-report', {
+            method:  'POST',
+            headers: {
+                'Content-Type':     'application/json',   // ← required for Flask request.get_json()
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({})                       // empty body is fine; Flask reads from DB
+        })
+        .then(function (response) {
+            console.log('[AI] HTTP status:', response.status);
+
+            // Flask redirects unauthenticated requests to /login
+            if (response.redirected || response.status === 302 || response.url.includes('/login')) {
+                showError('Session expired — please reload the page and log in again.');
+                return null;  // skip .then(data => …)
+            }
+
+            if (!response.ok) {
+                // Try to get error message from JSON body
+                return response.json().then(function (errData) {
+                    throw new Error(errData.error || 'Server error ' + response.status);
+                });
+            }
+
+            return response.json();
+        })
+        .then(function (data) {
+            if (data === null) return;   // already handled (redirect case)
+
+            console.log('[AI] Response data:', data);
+
+            if (data.error) {
+                showError(data.error);
+            } else if (data.result) {
+                showResult(data.result);
+            } else {
+                showError('Unexpected response format — missing "result" field.');
+                console.warn('[AI] Full response:', JSON.stringify(data));
+            }
+        })
+        .catch(function (err) {
+            console.error('[AI] fetch error:', err);
+            showError('Failed to reach AI service: ' + err.message);
+        })
+        .finally(function () {
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="bi bi-magic me-2"></i>Generate AI Report';
+            console.log('[AI] Button re-enabled');
+        });
+    };  // end generateAIAnalysis
+
+    // ── Real-time Stats Cards Function ───────────────────────────────────────
+    function updateStatsCards(devices) {
+        // Count devices by status
+        var devicesUp = 0;
+        var devicesDown = 0;
+        var devicesActive = 0;
+        var devicesOutside = 0;
+        
+        devices.forEach(function(device) {
+            if (device.status === 'UP') {
+                devicesUp++;
+            } else if (device.status === 'DOWN') {
+                devicesDown++;
+            } else if (device.status === 'ACTIVE') {
+                devicesActive++;
+            } else if (device.status === 'OUTSIDE') {
+                devicesOutside++;
+            }
+        });
+        
+        // Update stats cards with smooth animation
+        var devicesUpEl = document.getElementById('devices-up');
+        var devicesDownEl = document.getElementById('devices-down');
+        var unreadAlertsEl = document.getElementById('unread-alerts');
+        
+        if (devicesUpEl) {
+            animateValue(devicesUpEl, parseInt(devicesUpEl.textContent) || 0, devicesUp, 500);
+        }
+        
+        if (devicesDownEl) {
+            animateValue(devicesDownEl, parseInt(devicesDownEl.textContent) || 0, devicesDown, 500);
+        }
+        
+        if (unreadAlertsEl) {
+            // Count all meaningful alerts (HIGH + MEDIUM + LOW except "Secured device")
+            var meaningfulAlerts = devices.filter(function(device) {
+                return device.alert && device.severity && (
+                    device.severity === 'HIGH' || 
+                    device.severity === 'MEDIUM' ||
+                    (device.severity === 'LOW' && device.alert.indexOf('Secured device') === -1)
+                );
+            });
+            animateValue(unreadAlertsEl, parseInt(unreadAlertsEl.textContent) || 0, meaningfulAlerts.length, 500);
+        }
+        
+        // Update charts with new data
+        updateChartsWithData(devicesUp, devicesDown, devicesActive, devicesOutside, devices);
+    }
+    
+    // ── Number Animation Function ───────────────────────────────────────────
+    function animateValue(element, start, end, duration) {
+        if (start === end) return;
+        
+        var range = end - start;
+        var increment = range / (duration / 16);
+        var current = start;
+        
+        var timer = setInterval(function() {
+            current += increment;
+            if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                element.textContent = end;
+                clearInterval(timer);
+            } else {
+                element.textContent = Math.round(current);
+            }
+        }, 16);
+    }
+    
+    // ── Update Charts Function ───────────────────────────────────────────────
+    function updateChartsWithData(up, down, active, outside, devices) {
+        // Update status chart
+        var statusChart = Chart.getChart('statusChart');
+        if (statusChart) {
+            statusChart.data.datasets[0].data = [up, down, active, outside];
+            statusChart.update('none'); // Update without animation for performance
+        }
+        
+        // Update device types chart (if we have type data)
+        var typeChart = Chart.getChart('typeChart');
+        if (typeChart && devices) {
+            // Count device types from current data
+            var typeCounts = {};
+            devices.forEach(function(device) {
+                var type = device.type || 'Unknown';
+                typeCounts[type] = (typeCounts[type] || 0) + 1;
+            });
+            
+            var labels = Object.keys(typeCounts);
+            var data = Object.values(typeCounts);
+            
+            typeChart.data.labels = labels;
+            typeChart.data.datasets[0].data = data;
+            typeChart.update('none');
+        }
+    }
+
+    // ── Real-time Alerts Function ───────────────────────────────────────────
+    function updateRealtimeAlerts(devices) {
+        var alertsList = document.getElementById('realtime-alerts-list');
+        var alertsCount = document.getElementById('realtime-alerts-count');
+        
+        if (!alertsList) return;
+        
+        // Early return if no devices
+        if (!devices || devices.length === 0) return;
+        
+        // Optimized filtering with single pass
+       var meaningfulAlerts = [];
+for (var i = 0; i < devices.length; i++) {
+    var device = devices[i];
+    if (device.alert) {
+        meaningfulAlerts.push(device);
+    }
+}
+        // Optimized sort
+        meaningfulAlerts.sort(function(a, b) {
+            var severityOrder = { 'HIGH': 0, 'MEDIUM': 1, 'LOW': 2 };
+            var aSeverity = severityOrder[a.severity] || 3;
+            var bSeverity = severityOrder[b.severity] || 3;
+            
+            if (aSeverity !== bSeverity) {
+                return aSeverity - bSeverity;
+            }
+            return a.nom < b.nom ? -1 : a.nom > b.nom ? 1 : 0;
+        });
+        
+        // Update alert count
+        if (alertsCount) {
+            alertsCount.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>' + meaningfulAlerts.length;
+        }
+        
+        // Fast path for no alerts
+        if (meaningfulAlerts.length === 0) {
+            alertsList.innerHTML = 
+                '<div class="empty-state">' +
+                '<div class="empty-icon"><i class="bi bi-shield-check"></i></div>' +
+                '<h5 class="empty-title">No security alerts</h5>' +
+                '<p class="empty-description">All devices are properly secured</p>' +
+                '</div>';
+            return;
+        }
+        
+        // Optimized HTML generation with array join
+        var maxAlerts = Math.min(5, meaningfulAlerts.length);
+        var alertItems = [];
+        
+        for (var i = 0; i < maxAlerts; i++) {
+            var device = meaningfulAlerts[i];
+            var severity = device.severity.toLowerCase();
+            var iconClass = device.severity === 'HIGH' ? 'bi-exclamation-triangle-fill' : 
+                           device.severity === 'MEDIUM' ? 'bi-exclamation-circle-fill' : 
+                           'bi-info-circle-fill';
+            
+            alertItems.push(
+                '<div class="alert-item-modern alert-' + severity + '-modern slide-in-up">' +
+                '<div class="d-flex align-items-start gap-3">' +
+                '<div class="alert-icon-modern alert-' + severity + '-icon">' +
+                '<i class="bi ' + iconClass + '"></i>' +
+                '</div>' +
+                '<div class="flex-grow-1">' +
+                '<div class="alert-title-modern fw-semibold">' + device.alert + '</div>' +
+                '<div class="alert-meta-modern d-flex justify-content-between align-items-center mt-1">' +
+                '<span class="text-muted small">' +
+                '<i class="bi bi-hdd-network me-1"></i>' + device.nom +
+                '</span>' +
+                '<small class="text-muted">' +
+                '<i class="bi bi-wifi me-1"></i>' + device.ip +
+                '</small>' +
+                '</div>' +
+                '</div>' +
+                '</div>' +
+                '</div>'
+            );
+        }
+        
+        var alertsHtml = 
+            '<div class="alerts-list-modern">' +
+            alertItems.join('') +
+            (meaningfulAlerts.length > 5 ? 
+                '<div class="text-center mt-3">' +
+                '<small class="text-muted">' + (meaningfulAlerts.length - 5) + ' more alerts not shown</small>' +
+                '</div>' : '') +
+            '</div>';
+        
+        alertsList.innerHTML = alertsHtml;
+    }
+
+    // ── Stub helpers called from inline onclick in header buttons ────────
+    window.refreshDashboard = function () { location.reload(); };
+    window.exportDashboard  = function () { alert('Export not yet implemented'); };
+    window.exportChart      = function () { alert('Chart export not yet implemented'); };
+    window.refreshChart     = function () { location.reload(); };
+
+}());
+</script>
+
+<style>
+/* Spin animation for scan-button feedback */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { display: inline-block; animation: spin 0.8s linear infinite; }
+
+/* Port badge colours */
+.port-badges { display:flex; gap:.25rem; flex-wrap:wrap; align-items:center; }
+.port-ssh  { background:#28a745; color:#fff; font-size:.7rem; padding:.2rem .4rem; }
+.port-http { background:#007bff; color:#fff; font-size:.7rem; padding:.2rem .4rem; }
+.port-https{ background:#17a2b8; color:#fff; font-size:.7rem; padding:.2rem .4rem; }
+.port-ftp  { background:#6f42c1; color:#fff; font-size:.7rem; padding:.2rem .4rem; }
+.port-other{ background:#6c757d; color:#fff; font-size:.7rem; padding:.2rem .4rem; }
+
+/* Real-time device cards */
+.device-status-card { border:1px solid #dee2e6; border-radius:8px; padding:1rem; background:#fff; transition:all .3s ease; height:100%; }
+.device-status-card:hover { box-shadow:0 4px 12px rgba(0,0,0,.1); transform:translateY(-2px); }
+.device-name { font-weight:600; font-size:.9rem; color:#333; margin-bottom:.25rem; }
+.device-ip   { font-size:.8rem; color:#666; font-family:monospace; }
+.status-indicator { display:flex; align-items:center; gap:.5rem; padding:.25rem .75rem; border-radius:20px; font-size:.8rem; font-weight:500; transition:all .3s ease; }
+.status-up   { background:#d4edda; color:#155724; border:1px solid #c3e6cb; }
+.status-down { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
+.status-indicator i { font-size:.6rem; animation:pulse 2s infinite; }
+.status-up i   { color:#28a745; }
+.status-down i { color:#dc3545; }
+.ports-summary { display:flex; gap:.5rem; flex-wrap:wrap; }
+.port-count { font-size:.7rem; padding:.2rem .5rem; border-radius:12px; font-weight:500; }
+.port-count.open   { background:#d4edda; color:#155724; }
+.port-count.closed { background:#f8d7da; color:#721c24; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+
+/* Port details table */
+.port-details-row { border-top:2px solid #dee2e6; }
+.port-details-row .table th { background:#f8f9fa; border-bottom:2px solid #dee2e6; font-weight:600; font-size:.8rem; }
+.port-details-row .table td { vertical-align:middle; font-size:.8rem; }
+</style>
+
+{% endblock %}

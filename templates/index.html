@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}Équipements{% endblock %}
+{% block page_title %}Équipements{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <h1 class="page-title">Network Devices</h1>
+    <p class="page-subtitle">Manage and monitor all network equipment</p>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Stats Cards ────────────────────────────────────────────────────────── -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="bi bi-hdd-network"></i></div>
+        <div class="stat-content">
+            <div class="stat-value">{{ stats.total_equipements }}</div>
+            <div class="stat-label">Total Devices</div>
+        </div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+        <div class="stat-content">
+            <div class="stat-value">{{ stats.devices_up }}</div>
+            <div class="stat-label">Devices UP</div>
+        </div>
+    </div>
+    <div class="stat-card danger">
+        <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
+        <div class="stat-content">
+            <div class="stat-value">{{ stats.devices_down }}</div>
+            <div class="stat-label">Devices DOWN</div>
+        </div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-icon"><i class="bi bi-bell"></i></div>
+        <div class="stat-content">
+            <div class="stat-value">{{ stats.alertes_non_lues }}</div>
+            <div class="stat-label">Unread Alerts</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Toolbar ───────────────────────────────────────────────────────────── -->
+<div class="card mt-4">
+    <div class="card-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+        <h5 class="card-title mb-0">All Devices</h5>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            {% if current_user.is_admin() %}
+            <a href="{{ url_for('add_device') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle"></i> Add Device
+            </a>
+            {% endif %}
+            <a href="{{ url_for('scan_all') }}" class="btn btn-outline btn-sm">
+                <i class="bi bi-search"></i> Scan All
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        {% if equipments %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Device Name</th>
+                        <th>IP Address</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Added</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for eq in equipments %}
+                    <tr class="device-row" id="device-{{ eq.id }}">
+                        <td class="text-muted">{{ loop.index }}</td>
+                        <td><strong>{{ eq.nom }}</strong></td>
+                        <td>
+                            <code style="font-size:0.85rem;">{{ eq.ip }}</code>
+                        </td>
+                        <td>
+                            <span class="badge badge-info">{{ eq.type }}</span>
+                        </td>
+                        <td>
+                            <span class="text-muted" style="font-size:0.85rem;">
+                                {{ eq.description or '—' }}
+                            </span>
+                        </td>
+                        <td>
+                            {# Port table with scanner output structure #}
+                            {% set ports_data = eq.open_ports | default('[]') | from_json %}
+                            {% if ports_data %}
+                                <div class="port-table-container">
+                                    <table class="table table-sm table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Port</th>
+                                                <th>Service</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% if ports_data is mapping %}
+                                                {# Old dict structure - iterate over items #}
+                                                {% for port_num, port_info in ports_data.items() %}
+                                                    <tr>
+                                                        <td><code>{{ port_num }}</code></td>
+                                                        <td>{{ port_info.service }}</td>
+                                                        <td>
+                                                            {% if port_info.status == 'OPEN' %}
+                                                                <span class="badge bg-success">OPEN</span>
+                                                            {% elif port_info.status == 'CLOSED' %}
+                                                                <span class="badge bg-danger">CLOSED</span>
+                                                            {% else %}
+                                                                <span class="badge bg-secondary">ERROR</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            {% else %}
+                                                {# New list structure - iterate directly #}
+                                                {% for port_info in ports_data %}
+                                                    <tr>
+                                                        <td><code>{{ port_info.port }}</code></td>
+                                                        <td>{{ port_info.service }}</td>
+                                                        <td>
+                                                            {% if port_info.status == 'OPEN' %}
+                                                                <span class="badge bg-success">OPEN</span>
+                                                            {% elif port_info.status == 'CLOSED' %}
+                                                                <span class="badge bg-danger">CLOSED</span>
+                                                            {% else %}
+                                                                <span class="badge bg-secondary">ERROR</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            {% endif %}
+                                            {% if ports_data | length == 0 %}
+                                                <tr>
+                                                    <td colspan="3" class="text-center text-muted">No port data available</td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <span class="text-muted">No data</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {{ eq.date_ajout.strftime('%d/%m/%Y') if eq.date_ajout else '—' }}
+                            </small>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <!-- Scan button: AJAX -->
+                                <button class="btn btn-sm btn-outline scan-btn"
+                                        data-device-id="{{ eq.id }}"
+                                        data-device-ip="{{ eq.ip }}"
+                                        title="Scan {{ eq.nom }}">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                                <!-- Full scan result page -->
+                                <a href="{{ url_for('scan_equipment', equipment_id=eq.id) }}"
+                                   class="btn btn-sm btn-outline"
+                                   title="Detailed scan">
+                                    <i class="bi bi-activity"></i>
+                                </a>
+                                {% if current_user.is_admin() %}
+                                <button class="btn btn-sm btn-outline delete-btn"
+                                        data-device-id="{{ eq.id }}"
+                                        data-device-name="{{ eq.nom }}"
+                                        title="Delete {{ eq.nom }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-hdd-network"></i></div>
+            <h5 class="empty-title">No devices found</h5>
+            <p class="empty-description">Start monitoring by adding your first network device</p>
+            {% if current_user.is_admin() %}
+            <a href="{{ url_for('add_device') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Device
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ── Safe JSON for charts ───────────────────────────────────────────────── -->
+<script id="dashboard-data" type="application/json">
+{
+    "devicesUp":   {{ stats.devices_up   | default(0) | int | tojson }},
+    "devicesDown": {{ stats.devices_down | default(0) | int | tojson }},
+    "routeurs":    {{ stats.routeurs     | default(0) | int | tojson }},
+    "switches":    {{ stats.switches     | default(0) | int | tojson }},
+    "total":       {{ stats.total_equipements | default(0) | int | tojson }}
+}
+</script>
+
+<script>
+(function () {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // ── AJAX Scan buttons ─────────────────────────────────────────────
+        document.querySelectorAll('.scan-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var deviceId = this.getAttribute('data-device-id');
+                var icon     = this.querySelector('i');
+
+                btn.disabled = true;
+                if (icon) icon.className = 'bi bi-arrow-repeat spin';
+
+                fetch('/api/scan/' + deviceId, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var portBadges = document.getElementById('port-badges-' + deviceId);
+                    var statusBadge = document.getElementById('status-badge-' + deviceId);
+                    
+                    if (data.status === 'UP') {
+                        // Update port badges
+                        if (portBadges && data.open_ports && data.open_ports.length > 0) {
+                            var badgesHtml = '';
+                            data.open_ports.forEach(function(port) {
+                                if (port === 22) {
+                                    badgesHtml += '<span class="badge port-ssh" title="SSH (22)">SSH</span>';
+                                } else if (port === 80) {
+                                    badgesHtml += '<span class="badge port-http" title="HTTP (80)">HTTP</span>';
+                                } else if (port === 443) {
+                                    badgesHtml += '<span class="badge port-https" title="HTTPS (443)">HTTPS</span>';
+                                } else if (port === 21) {
+                                    badgesHtml += '<span class="badge port-ftp" title="FTP (21)">FTP</span>';
+                                } else {
+                                    badgesHtml += '<span class="badge port-other" title="' + port + '">' + port + '</span>';
+                                }
+                            });
+                            portBadges.innerHTML = badgesHtml;
+                        } else if (statusBadge) {
+                            // No open ports, show UP badge
+                            statusBadge.className = 'badge badge-success';
+                            statusBadge.innerHTML = '<i class="bi bi-circle-fill" style="font-size:0.6rem;"></i> UP';
+                        }
+                    } else {
+                        // DOWN status - remove port badges and show DOWN badge
+                        if (portBadges) {
+                            portBadges.innerHTML = '<span class="badge badge-danger" id="status-badge-' + deviceId + '"><i class="bi bi-circle-fill" style="font-size:0.6rem;"></i> DOWN</span>';
+                        }
+                    }
+                    
+                    // Highlight the row briefly
+                    var row = document.getElementById('device-' + deviceId);
+                    if (row) {
+                        row.style.transition = 'background 0.4s';
+                        row.style.background = data.status === 'UP' ? '#d4edda' : '#f8d7da';
+                        setTimeout(function () { row.style.background = ''; }, 1500);
+                    }
+                })
+                .catch(function (err) {
+                    console.error('Scan error:', err);
+                    alert('Scan failed: ' + err.message);
+                })
+                .finally(function () {
+                    btn.disabled = false;
+                    if (icon) icon.className = 'bi bi-search';
+                });
+            });
+        });
+
+        // ── Delete buttons ────────────────────────────────────────────────
+        document.querySelectorAll('.delete-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var deviceId   = this.getAttribute('data-device-id');
+                var deviceName = this.getAttribute('data-device-name');
+                if (confirm('Delete "' + deviceName + '"?\nThis will also remove all related alerts.')) {
+                    window.location.href = '/delete/' + deviceId;
+                }
+            });
+        });
+
+    });
+
+}());
+</script>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { display: inline-block; animation: spin 0.8s linear infinite; }
+
+/* Port table styling */
+.port-table-container {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 0.5rem;
+}
+
+.port-table-container .table {
+    font-size: 0.8rem;
+    margin-bottom: 0;
+}
+
+.port-table-container .table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+/* Port badge styling (kept for compatibility) */
+.port-badges {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.port-ssh {
+    background-color: #28a745;
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+.port-http {
+    background-color: #007bff;
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+.port-https {
+    background-color: #17a2b8;
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+.port-ftp {
+    background-color: #6f42c1;
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+.port-other {
+    background-color: #6c757d;
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+</style>
+
+{% endblock %}

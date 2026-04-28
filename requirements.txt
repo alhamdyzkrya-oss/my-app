@@ -1,0 +1,6 @@
+Flask==2.3.3
+Flask-Login==0.6.3
+PyMySQL==1.1.0
+bcrypt==4.0.1
+python-dotenv==1.0.0
+python-nmap==0.7.1

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INFRASCAN - {% block title %}{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Custom CSS with versioning -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <!-- Admin Layout -->
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="bi bi-hdd-network"></i>
+                    INFRASCAN
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                        <i class="bi bi-speedometer2 nav-icon"></i>
+                        Dashboard
+                    </a>
+                    <a href="{{ url_for('equipements') }}" class="nav-item {% if request.endpoint == 'equipements' %}active{% endif %}">
+                        <i class="bi bi-hdd-network nav-icon"></i>
+                        Devices
+                    </a>
+                    <a href="{{ url_for('networks_management') }}" class="nav-item {% if request.endpoint == 'networks_management' %}active{% endif %}">
+                        <i class="bi bi-globe nav-icon"></i>
+                        Networks
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Operations</div>
+                    <a href="{{ url_for('scan_all') }}" class="nav-item {% if request.endpoint == 'scan_all' %}active{% endif %}">
+                        <i class="bi bi-search nav-icon"></i>
+                        Scan
+                    </a>
+                    <a href="{{ url_for('add_device') }}" class="nav-item {% if request.endpoint == 'add_device' %}active{% endif %}">
+                        <i class="bi bi-plus-circle nav-icon"></i>
+                        Add Device
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Monitoring</div>
+                    <a href="#" class="nav-item">
+                        <i class="bi bi-bell nav-icon"></i>
+                        Alerts
+                    </a>
+                    <a href="#" class="nav-item">
+                        <i class="bi bi-clock-history nav-icon"></i>
+                        Logs
+                    </a>
+                    <a href="#" class="nav-item">
+                        <i class="bi bi-cpu nav-icon"></i>
+                        AI Analysis
+                    </a>
+                </div>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Navbar -->
+            <header class="top-navbar">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="mobile-menu-toggle d-md-none" onclick="toggleSidebar()">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div class="navbar-brand">{% block page_title %}Dashboard{% endblock %}</div>
+                </div>
+                <div class="navbar-actions">
+                    <div class="user-info">
+                        <div class="user-avatar">{{ current_user.username[0].upper() }}</div>
+                        <span>{{ current_user.username }}</span>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </div>
+            </header>
+            
+            <!-- Page Content -->
+            <div class="page-content">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <!-- Page Header -->
+                {% block page_header %}{% endblock %}
+                
+                <!-- Content -->
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    {% else %}
+    <!-- Login Layout -->
+    {% block login_content %}{% endblock %}
+    {% endif %}
+    
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS with versioning -->
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=2"></script>
+    
+    <script>
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.querySelector('.mobile-menu-toggle');
+            
+            if (window.innerWidth < 768 && 
+                !sidebar.contains(event.target) && 
+                !toggleBtn.contains(event.target)) {
+                sidebar.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meme Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Impact', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .meme-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .meme-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .meme-text {
+            position: relative;
+            padding: 20px;
+            background: white;
+        }
+
+        .top-text, .bottom-text {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: white;
+            text-shadow: 
+                2px 2px 0 #000,
+                -2px -2px 0 #000,
+                2px -2px 0 #000,
+                -2px 2px 0 #000,
+                0px 2px 0 #000,
+                0px -2px 0 #000,
+                2px 0px 0 #000,
+                -2px 0px 0 #000,
+                3px 3px 5px rgba(0,0,0,0.5);
+            letter-spacing: 1px;
+            margin: 10px 0;
+        }
+
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-2px);
+        }
+
+        .download-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .download-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(238, 90, 36, 0.4);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(238, 90, 36, 0.6);
+        }
+
+        .meme-preview {
+            position: relative;
+            background: #000;
+        }
+
+        @media (max-width: 768px) {
+            .top-text, .bottom-text {
+                font-size: 1.8rem;
+            }
+            
+            .controls {
+                padding: 15px;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="meme-container">
+        <div class="meme-preview">
+            <img src="https://via.placeholder.com/600x400/000000/ffffff?text=Upload+Image+Here" alt="Meme Template" class="meme-image" id="memeImage">
+            <div class="meme-text">
+                <div class="top-text" id="topText">WHEN YOU FINALLY</div>
+                <div class="bottom-text" id="bottomText">FIX THE BUG AT 3 AM</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="input-group">
+                <label for="topTextInput">Top Text:</label>
+                <input type="text" id="topTextInput" placeholder="Enter top text..." value="WHEN YOU FINALLY">
+            </div>
+            
+            <div class="input-group">
+                <label for="bottomTextInput">Bottom Text:</label>
+                <input type="text" id="bottomTextInput" placeholder="Enter bottom text..." value="FIX THE BUG AT 3 AM">
+            </div>
+            
+            <div class="input-group">
+                <label for="imageInput">Upload Image:</label>
+                <input type="file" id="imageInput" accept="image/*">
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="updateMeme()">Update Meme</button>
+                <button class="btn btn-secondary" onclick="resetMeme()">Reset</button>
+            </div>
+        </div>
+        
+        <div class="download-section">
+            <button class="download-btn" onclick="downloadMeme()">
+                <i>⬇️</i> Download Meme
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Update meme text
+        function updateMeme() {
+            const topText = document.getElementById('topTextInput').value.toUpperCase();
+            const bottomText = document.getElementById('bottomTextInput').value.toUpperCase();
+            
+            document.getElementById('topText').textContent = topText;
+            document.getElementById('bottomText').textContent = bottomText;
+        }
+
+        // Reset meme
+        function resetMeme() {
+            document.getElementById('topTextInput').value = 'WHEN YOU FINALLY';
+            document.getElementById('bottomTextInput').value = 'FIX THE BUG AT 3 AM';
+            updateMeme();
+        }
+
+        // Handle image upload
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('memeImage').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Download meme as image
+        function downloadMeme() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = document.getElementById('memeImage');
+            
+            canvas.width = img.naturalWidth || 600;
+            canvas.height = img.naturalHeight || 400;
+            
+            // Draw image
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // Set text properties
+            ctx.font = 'bold 48px Impact';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            
+            // Draw top text
+            const topText = document.getElementById('topText').textContent;
+            ctx.strokeText(topText, canvas.width / 2, 60);
+            ctx.fillText(topText, canvas.width / 2, 60);
+            
+            // Draw bottom text
+            const bottomText = document.getElementById('bottomText').textContent;
+            ctx.strokeText(bottomText, canvas.width / 2, canvas.height - 30);
+            ctx.fillText(bottomText, canvas.width / 2, canvas.height - 30);
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = 'meme.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // Auto-update on input change
+        document.getElementById('topTextInput').addEventListener('input', updateMeme);
+        document.getElementById('bottomTextInput').addEventListener('input', updateMeme);
+    </script>
+</body>
+</html>

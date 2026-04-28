@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Devices{% endblock %}
+{% block page_title %}Devices{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <h1 class="page-title">Network Devices</h1>
+    <p class="page-subtitle">Manage and monitor all network devices</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Actions Bar -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search devices...">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex justify-content-end gap-2">
+                    <select class="form-select" id="typeFilter" style="max-width: 200px;">
+                        <option value="">All Types</option>
+                        <option value="Routeur">Router</option>
+                        <option value="Switch">Switch</option>
+                        <option value="Serveur">Server</option>
+                        <option value="Autre">Other</option>
+                    </select>
+                    <a href="{{ url_for('add_device') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add Device
+                    </a>
+                    <button class="btn btn-outline" onclick="scanAllDevices()">
+                        <i class="bi bi-search"></i> Scan All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Devices Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">Device List</h5>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted">Total: <span id="device-count">{{ equipments|length }}</span> devices</span>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if equipments %}
+        <div class="table-responsive">
+            <table class="table" id="devicesTable">
+                <thead>
+                    <tr>
+                        <th>Device Name</th>
+                        <th>IP Address</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Last Scan</th>
+                        <th>Added Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for eq in equipments %}
+                    <tr class="device-row" id="device-{{ eq.id }}" data-type="{{ eq.type }}" data-name="{{ eq.nom|lower }}" data-ip="{{ eq.ip }}">
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="device-icon type-{{ eq.type.lower() }}">
+                                    {% if eq.type == 'Routeur' %}
+                                    <i class="bi bi-router"></i>
+                                    {% elif eq.type == 'Switch' %}
+                                    <i class="bi bi-hdd-stack"></i>
+                                    {% elif eq.type == 'Serveur' %}
+                                    <i class="bi bi-server"></i>
+                                    {% else %}
+                                    <i class="bi bi-hdd-network"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <strong>{{ eq.nom }}</strong>
+                                    {% if eq.description %}
+                                    <br><small class="text-muted">{{ eq.description }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <code>{{ eq.ip }}</code>
+                        </td>
+                        <td>
+                            <span class="badge badge-info">{{ eq.type }}</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-success" id="status-{{ eq.id }}">UP</span>
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ eq.last_scan.strftime('%Y-%m-%d %H:%M') if eq.last_scan else 'Never' }}</small>
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ eq.date_ajout.strftime('%Y-%m-%d') if eq.date_ajout else 'N/A' }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline scan-btn" data-device-id="{{ eq.id }}" id="scan-{{ eq.id }}" title="Scan Device">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                                <a href="{{ url_for('edit_equipment', equipment_id=eq.id) }}" class="btn btn-sm btn-outline" title="Edit Device">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% if current_user.is_admin() %}
+                                <button class="btn btn-sm btn-outline delete-btn" data-device-id="{{ eq.id }}" data-device-name="{{ eq.nom }}" title="Delete Device">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-hdd-network"></i>
+            </div>
+            <h5 class="empty-title">No devices found</h5>
+            <p class="empty-description">Start by adding your first network device to begin monitoring</p>
+            <a href="{{ url_for('add_device') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Your First Device
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const typeFilter = document.getElementById('typeFilter');
+    const deviceRows = document.querySelectorAll('.device-row');
+    
+    function filterDevices() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const typeValue = typeFilter.value;
+        
+        deviceRows.forEach(row => {
+            const name = row.getAttribute('data-name');
+            const ip = row.getAttribute('data-ip');
+            const type = row.getAttribute('data-type');
+            
+            const matchesSearch = name.includes(searchTerm) || ip.includes(searchTerm);
+            const matchesType = !typeValue || type === typeValue;
+            
+            if (matchesSearch && matchesType) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Update visible count
+        const visibleCount = Array.from(deviceRows).filter(row => row.style.display !== 'none').length;
+        document.getElementById('device-count').textContent = visibleCount;
+    }
+    
+    searchInput.addEventListener('input', filterDevices);
+    typeFilter.addEventListener('change', filterDevices);
+    
+    // Scan buttons
+    const scanButtons = document.querySelectorAll('.scan-btn');
+    scanButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const deviceId = this.getAttribute('data-device-id');
+            scanDevice(deviceId);
+        });
+    });
+    
+    // Delete buttons
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const deviceId = this.getAttribute('data-device-id');
+            const deviceName = this.getAttribute('data-device-name');
+            deleteDevice(deviceId, deviceName);
+        });
+    });
+});
+
+// Scan all devices
+function scanAllDevices() {
+    const scanButtons = document.querySelectorAll('.scan-btn');
+    let completed = 0;
+    let total = scanButtons.length;
+    
+    if (total === 0) {
+        showAlert('warning', 'No devices available to scan');
+        return;
+    }
+    
+    // Disable all buttons and show scanning state
+    scanButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i>';
+    });
+    
+    showAlert('info', `Starting scan for ${total} devices...`);
+    
+    // Scan devices with better error handling
+    const scanPromises = Array.from(scanButtons).map((btn, index) => {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const deviceId = btn.getAttribute('data-device-id');
+                const deviceName = btn.getAttribute('data-device-name') || `Device ${deviceId}`;
+                
+                fetch(`/scan/${deviceId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            updateDeviceStatus(deviceId, data.status || 'UP');
+                            console.log(`Scan completed for ${deviceName}: ${data.status || 'UP'}`);
+                        } else {
+                            console.error(`Scan failed for ${deviceName}: ${data.error || 'Unknown error'}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error(`Scan error for ${deviceName}:`, error);
+                        showAlert('warning', `Scan failed for ${deviceName}: ${error.message}`);
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-search"></i>';
+                        completed++;
+                        
+                        // Show progress
+                        const progress = Math.round((completed / total) * 100);
+                        showAlert('info', `Scan progress: ${progress}% (${completed}/${total})`);
+                        
+                        if (completed === total) {
+                            showAlert('success', `Scan completed for all ${total} devices`);
+                        }
+                        
+                        resolve();
+                    });
+            }, index * 200); // Reduced stagger time for faster scanning
+        });
+    });
+    
+    // Wait for all scans to complete
+    Promise.all(scanPromises).then(() => {
+        console.log('All device scans completed');
+    });
+}
+</script>
+
+<style>
+.device-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+}
+
+/* Spinning animation for scan button */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.spin {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+
+.type-routeur {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.type-switch {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.type-serveur {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.type-autre {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.btn-group {
+    display: flex;
+    gap: 0.25rem;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

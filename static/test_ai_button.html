@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Button Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>AI Button Test Page</h2>
+        
+        <!-- AI Analysis Section -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-cpu text-primary me-2"></i>
+                    AI Security Analysis Test
+                </h5>
+                <button class="btn btn-primary btn-sm" onclick="testAIButton()" id="ai-analysis-btn">
+                    <i class="bi bi-magic me-1"></i>Generate AI Report
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="ai-analysis-loading" class="text-center" style="display:none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Analyzing...</span>
+                    </div>
+                    <p class="mt-2 text-muted">AI is analyzing your network security...</p>
+                </div>
+                
+                <div id="ai-analysis-result" style="display:none;">
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-shield-check me-2"></i>AI Security Assessment</h6>
+                        <div id="ai-analysis-content"></div>
+                    </div>
+                </div>
+                
+                <div id="ai-analysis-error" class="alert alert-danger" style="display:none;">
+                    <h6><i class="bi bi-exclamation-triangle me-2"></i>Analysis Error</h6>
+                    <div id="ai-analysis-error-content"></div>
+                </div>
+                
+                <div id="ai-analysis-empty" class="text-center text-muted py-4">
+                    <i class="bi bi-cpu display-4"></i>
+                    <p class="mt-2">Click "Generate AI Report" to test AI functionality</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Debug Console -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6>Debug Console</h6>
+            </div>
+            <div class="card-body">
+                <div id="debug-console" style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto;">
+                    Console output will appear here...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const console = document.getElementById('debug-console');
+            const timestamp = new Date().toLocaleTimeString();
+            console.innerHTML += `[${timestamp}] ${message}\n`;
+            console.scrollTop = console.scrollHeight;
+            console.log(message);
+        }
+
+        function testAIButton() {
+            log('=== AI Button Clicked ===');
+            
+            var loadingDiv = document.getElementById('ai-analysis-loading');
+            var resultDiv = document.getElementById('ai-analysis-result');
+            var errorDiv = document.getElementById('ai-analysis-error');
+            var emptyDiv = document.getElementById('ai-analysis-empty');
+            var btn = document.getElementById('ai-analysis-btn');
+            
+            log('Showing loading state...');
+            loadingDiv.style.display = 'block';
+            resultDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            emptyDiv.style.display = 'none';
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Analyzing...';
+            
+            // Test with sample data
+            var testDevices = [
+                {
+                    ip: '192.168.1.1',
+                    status: 'UP',
+                    ports: [
+                        {port: 22, status: 'OPEN'},
+                        {port: 80, status: 'OPEN'},
+                        {port: 443, status: 'OPEN'}
+                    ]
+                },
+                {
+                    ip: '192.168.1.10',
+                    status: 'DOWN',
+                    ports: []
+                },
+                {
+                    ip: '192.168.1.20',
+                    status: 'UP',
+                    ports: [
+                        {port: 21, status: 'OPEN'},  // FTP - HIGH RISK
+                        {port: 23, status: 'OPEN'},  // Telnet - HIGH RISK
+                        {port: 80, status: 'OPEN'}
+                    ]
+                }
+            ];
+            
+            log('Sending test devices to AI...');
+            log('Devices: ' + JSON.stringify(testDevices, null, 2));
+            
+            sendAIRequest(testDevices);
+            
+            function sendAIRequest(devices) {
+                log('Making POST request to /test-ai-analysis...');
+                
+                fetch('/test-ai-analysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ devices: devices })
+                })
+                .then(function(response) {
+                    log('Response status: ' + response.status);
+                    log('Response headers: ' + JSON.stringify(Object.fromEntries(response.headers)));
+                    return response.json();
+                })
+                .then(function(data) {
+                    log('Response data: ' + JSON.stringify(data, null, 2));
+                    
+                    if (data.error) {
+                        log('Error in response: ' + data.error);
+                        showAIError(data.error);
+                    } else {
+                        log('Success! Showing AI result...');
+                        showAIResult(data.analysis);
+                    }
+                })
+                .catch(function(err) {
+                    log('Request failed: ' + err.message);
+                    log('Full error: ' + err.toString());
+                    showAIError('Failed to connect to AI service: ' + err.message);
+                })
+                .finally(function() {
+                    log('Resetting button state...');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-magic me-1"></i>Generate AI Report';
+                });
+            }
+            
+            function showAIResult(analysis) {
+                log('Displaying AI result...');
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'none';
+                emptyDiv.style.display = 'none';
+                
+                var content = document.getElementById('ai-analysis-content');
+                content.innerHTML = '<pre style="white-space: pre-wrap; background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; margin: 0;">' + 
+                                  analysis + '</pre>';
+                resultDiv.style.display = 'block';
+                log('AI result displayed successfully!');
+            }
+            
+            function showAIError(error) {
+                log('Displaying error: ' + error);
+                loadingDiv.style.display = 'none';
+                resultDiv.style.display = 'none';
+                emptyDiv.style.display = 'none';
+                
+                var errorContent = document.getElementById('ai-analysis-error-content');
+                errorContent.innerHTML = error + '<br><small>Make sure Ollama is running with: <code>ollama serve</code></small>';
+                errorDiv.style.display = 'block';
+                log('Error displayed successfully!');
+            }
+        }
+
+        // Test Ollama connection on page load
+        window.onload = function() {
+            log('=== Page Loaded ===');
+            log('Testing Ollama connection...');
+            
+            fetch('/test-ai-analysis', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ 
+                    devices: [{
+                        ip: '127.0.0.1',
+                        status: 'TEST',
+                        ports: []
+                    }]
+                })
+            })
+            .then(function(response) {
+                log('Ollama test response status: ' + response.status);
+                return response.json();
+            })
+            .then(function(data) {
+                log('Ollama test response: ' + JSON.stringify(data));
+                if (data.error) {
+                    log('Ollama test error: ' + data.error);
+                } else {
+                    log('Ollama connection OK!');
+                }
+            })
+            .catch(function(err) {
+                log('Ollama test failed: ' + err.message);
+            });
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if scan_all %}
+        Scan Global - Tous les équipements
+    else %
+        Scan de {{ equipment.nom }}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="scan-container">
+    <div class="scan-header">
+        {% if scan_all %}
+            <h1>🔍 Scan global du réseau</h1>
+            <p>Tous les équipements ont été scannés le: {{ scan.timestamp if scan else now }}</p>
+        {% else %}
+            <h1>🔍 Résultats du scan</h1>
+            <p class="scan-time">Scan effectué le: {{ scan.timestamp }}</p>
+        {% endif %}
+    </div>
+
+    {% if scan_all %}
+        <!-- Mode Scan Global - Afficher tous les équipements -->
+        <div class="scan-all-results">
+            {% for result in results %}
+            <div class="equipment-scan-card">
+                <div class="scan-card-header">
+                    <h3>{{ result.equipment.nom }}</h3>
+                    <span class="badge badge-{{ result.equipment.type.lower() }}">
+                        {{ result.equipment.type }}
+                    </span>
+                </div>
+                
+                <div class="scan-card-body">
+                    <div class="scan-info">
+                        <span>📌 IP: {{ result.equipment.ip }}</span>
+                        {% if result.equipment.description %}
+                        <span>📝 {{ result.equipment.description[:50] }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Résumé du scan -->
+                    <div class="scan-summary">
+                        <div class="ping-status">
+                            {% if result.scan.ping %}
+                            <div class="status-badge status-up">
+                                ✅ UP - Répond au ping
+                            </div>
+                            {% else %}
+                            <div class="status-badge status-down">
+                                ❌ DOWN - Ne répond pas
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="ports-summary">
+                            <div class="ports-title">Ports scannés:</div>
+                            <div class="ports-list">
+                                {% for port, info in result.scan.ports.items() %}
+                                <div class="port-badge {% if info.open %}port-open{% else %}port-closed{% endif %}" 
+                                     title="{{ info.service }}: {% if info.open %}Ouvert{% else %}Fermé{% endif %}">
+                                    {{ port }}
+                                    {% if info.open %}✅{% else %}❌{% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Détails des ports -->
+                    <details class="ports-details">
+                        <summary>📊 Détails des ports</summary>
+                        <div class="ports-table">
+                            <div class="ports-header">
+                                <div class="port-col">Port</div>
+                                <div class="service-col">Service</div>
+                                <div class="status-col">Statut</div>
+                            </div>
+                            {% for port, info in result.scan.ports.items() %}
+                            <div class="port-row">
+                                <div class="port-col">{{ port }}</div>
+                                <div class="service-col">{{ info.service }}</div>
+                                <div class="status-col">
+                                    {% if info.open %}
+                                    <span class="port-open-text">🟢 OUVERT</span>
+                                    {% else %}
+                                    <span class="port-closed-text">🔴 FERMÉ</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </details>
+                </div>
+                
+                <div class="scan-card-actions">
+                    <a href="{{ url_for('scan_equipment', equipment_id=result.equipment.id) }}" 
+                       class="btn btn-small btn-scan">
+                        🔍 Scan détaillé
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+    {% else %}
+        <!-- Mode Scan Unique - Afficher un seul équipement -->
+        <div class="equipment-info">
+            <h2>{{ equipment.nom }}</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">📌 IP:</span>
+                    <span class="value">{{ equipment.ip }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">🔧 Type:</span>
+                    <span class="value">{{ equipment.type }}</span>
+                </div>
+                {% if equipment.description %}
+                <div class="info-item full-width">
+                    <span class="label">📝 Description:</span>
+                    <span class="value">{{ equipment.description }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="scan-results">
+            <!-- Résultat Ping -->
+            <div class="result-card">
+                <h3>📡 Test ICMP (Ping)</h3>
+                <div class="ping-result {% if scan.ping %}ping-up{% else %}ping-down{% endif %}">
+                    {% if scan.ping %}
+                    <div class="result-icon">✅</div>
+                    <div class="result-text">
+                        <strong>Équipement UP</strong><br>
+                        Répond aux requêtes ping
+                    </div>
+                    {% else %}
+                    <div class="result-icon">❌</div>
+                    <div class="result-text">
+                        <strong>Équipement DOWN</strong><br>
+                        Ne répond pas au ping
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Scan des ports -->
+            <div class="result-card">
+                <h3>🔌 Scan des ports</h3>
+                <div class="ports-table">
+                    <div class="ports-header">
+                        <div class="port-col">Port</div>
+                        <div class="service-col">Service</div>
+                        <div class="status-col">Statut</div>
+                    </div>
+                    {% for port, info in scan.ports.items() %}
+                    <div class="port-row">
+                        <div class="port-col">{{ port }}</div>
+                        <div class="service-col">{{ info.service }}</div>
+                        <div class="status-col">
+                            {% if info.open %}
+                            <span class="port-open-text">🟢 OUVERT</span>
+                            {% else %}
+                            <span class="port-closed-text">🔴 FERMÉ</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Boutons d'action -->
+    <div class="scan-actions">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+            ← Retour à l'accueil
+        </a>
+        {% if scan_all %}
+            <a href="{{ url_for('scan_all') }}" class="btn btn-primary">
+                🔄 Rescanner tout
+            </a>
+        {% else %}
+            <a href="{{ url_for('scan_equipment', equipment_id=equipment.id) }}" class="btn btn-primary">
+                🔄 Rescanner
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

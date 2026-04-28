@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini-Nmap Scanner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .scanner-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            margin: 50px auto;
+            max-width: 800px;
+            overflow: hidden;
+        }
+        
+        .scanner-header {
+            background: linear-gradient(90deg, #1e40af, #3730a3);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .scanner-header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        
+        .scanner-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .scanner-body {
+            padding: 40px;
+        }
+        
+        .scan-form {
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-control {
+            height: 50px;
+            font-size: 1.1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #1e40af;
+            box-shadow: 0 0 0 0.2rem rgba(30, 64, 175, 0.25);
+        }
+        
+        .btn-scan {
+            background: linear-gradient(45deg, #1e40af, #3b82f6);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .btn-scan:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(30, 64, 175, 0.3);
+        }
+        
+        .btn-scan:disabled {
+            background: #6b7280;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .scan-result {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .result-header {
+            background: #f8fafc;
+            border-left: 5px solid #1e40af;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .status-up {
+            border-left-color: #16a34a !important;
+            background: #f0fdf4;
+        }
+        
+        .status-down {
+            border-left-color: #dc2626 !important;
+            background: #fef2f2;
+        }
+        
+        .ports-container {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .port-item {
+            display: inline-block;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 15px;
+            margin: 5px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .port-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        }
+        
+        .port-open {
+            background: #dcfce7;
+            border-color: #16a34a;
+            color: #15803d;
+        }
+        
+        .port-closed {
+            background: #f3f4f6;
+            border-color: #6b7280;
+            color: #374151;
+        }
+        
+        .no-ports {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #1e40af;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanner-container">
+        <div class="scanner-header">
+            <h1><i class="fas fa-network-wired"></i> Mini-Nmap Scanner</h1>
+            <p>Professional network scanning tool with real port detection</p>
+        </div>
+        
+        <div class="scanner-body">
+            <form class="scan-form" id="scanForm">
+                <div class="input-group">
+                    <label for="ipInput" class="form-label">IP Address</label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="ipInput" 
+                           placeholder="192.168.1.1"
+                           pattern="^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"
+                           required>
+                    <div class="form-text">Enter a valid IP address to scan</div>
+                </div>
+                
+                <button type="submit" class="btn btn-scan" id="scanBtn">
+                    <i class="fas fa-search"></i> Start Scan
+                </button>
+            </form>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Scanning... Please wait</p>
+            </div>
+            
+            <div class="scan-result" id="scanResult">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('scanForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const ip = document.getElementById('ipInput').value.trim();
+            const scanBtn = document.getElementById('scanBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('scanResult');
+            
+            if (!ip) {
+                showError('Please enter an IP address');
+                return;
+            }
+            
+            // Show loading
+            scanBtn.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            
+            try {
+                const response = await fetch(`/scan/${ip}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'error') {
+                    showError(data.error || 'Scan failed');
+                    return;
+                }
+                
+                displayResults(data);
+                
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                scanBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+        
+        function displayResults(data) {
+            const result = document.getElementById('scanResult');
+            
+            let html = `
+                <div class="result-header ${data.status === 'UP' ? 'status-up' : 'status-down'}">
+                    <h3><i class="fas fa-${data.status === 'UP' ? 'check-circle' : 'times-circle'}"></i> 
+                    Host Status: ${data.status}</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">${data.ping_ms || 'N/A'}</div>
+                            <div class="stat-label">Ping (ms)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${data.packet_loss || 0}%</div>
+                            <div class="stat-label">Packet Loss</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${data.port_summary ? data.port_summary.total : 0}</div>
+                            <div class="stat-label">Total Ports</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Display ALL ports in a table with color coding
+            if (data.ports && data.ports.length > 0) {
+                html += `
+                    <div class="ports-container">
+                        <h4><i class="fas fa-network-wired"></i> Port Scan Results</h4>
+                        <div class="port-summary">
+                            <span class="badge bg-success">OPEN: ${data.port_summary.open}</span>
+                            <span class="badge bg-danger">CLOSED: ${data.port_summary.closed}</span>
+                            <span class="badge bg-warning">ERROR: ${data.port_summary.error}</span>
+                        </div>
+                        <div class="table-responsive mt-3">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Port</th>
+                                        <th>Service</th>
+                                        <th>Status</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+                
+                data.ports.forEach(port => {
+                    let statusClass = '';
+                    let statusIcon = '';
+                    
+                    if (port.status === 'OPEN') {
+                        statusClass = 'table-success';
+                        statusIcon = '<i class="fas fa-check-circle text-success"></i>';
+                    } else if (port.status === 'CLOSED') {
+                        statusClass = 'table-danger';
+                        statusIcon = '<i class="fas fa-times-circle text-danger"></i>';
+                    } else {
+                        statusClass = 'table-warning';
+                        statusIcon = '<i class="fas fa-exclamation-triangle text-warning"></i>';
+                    }
+                    
+                    html += `
+                        <tr class="${statusClass}">
+                            <td><strong>${port.port}</strong></td>
+                            <td>${port.service}</td>
+                            <td>
+                                ${statusIcon}
+                                <span class="badge bg-${port.status === 'OPEN' ? 'success' : port.status === 'CLOSED' ? 'danger' : 'warning'}">
+                                    ${port.status}
+                                </span>
+                            </td>
+                            <td><small class="text-muted">${port.reason}</small></td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="ports-container">
+                        <div class="no-ports">
+                            <i class="fas fa-network-wired"></i>
+                            <h5>No port data available</h5>
+                            <p>Unable to retrieve port information</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i> 
+                        Scanned at: ${data.timestamp}
+                    </small>
+                </div>
+            `;
+            
+            result.innerHTML = html;
+            result.style.display = 'block';
+        }
+        
+        function showError(message) {
+            const result = document.getElementById('scanResult');
+            result.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Error:</strong> ${message}
+                </div>
+            `;
+            result.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
